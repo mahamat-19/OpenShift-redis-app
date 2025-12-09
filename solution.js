@@ -1,36 +1,46 @@
+// server.js
 import express from "express";
 import bodyParser from "body-parser";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { createClient } from "redis";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = 3000;
 
-var userIsAuthorised = false;
+// Redis client
+const redis = createClient({ url: process.env.REDIS_URL || "redis://localhost:6379" });
+
+redis.on("error", (err) => console.error("Redis error:", err));
+
+// Connect on server start
+await redis.connect();
 
 app.use(bodyParser.urlencoded({ extended: true }));
-
-function passwordCheck(req, res, next) {
-  const password = req.body["password"];
-  if (password === "distributedsystems") {
-    userIsAuthorised = true;
-  }
-  next();
-}
-app.use(passwordCheck);
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
-app.post("/check", (req, res) => {
-  if (userIsAuthorised) {
-    res.sendFile(__dirname + "/public/secret.html");
-  } else {
-    res.sendFile(__dirname + "/public/index.html");
-    //Alternatively res.redirect("/");
+app.post("/check", async (req, res) => {
+  const username = req.body.username || "";
+  const password = req.body.password || "";
+
+  // Retrieve saved credentials from Redis (hash)
+  // Here we use a fixed key; in a real app you’d use dynamic user keys.
+  const stored = await redis.hGetAll("credentials:admin");
+
+  const isValid =
+    stored &&
+    stored.username === username &&
+    stored.password === password;
+
+  if (isValid) {
+    return res.sendFile(__dirname + "/public/secret.html");
   }
+
+  return res.sendFile(__dirname + "/public/index.html");
 });
 
 app.listen(port, () => {
