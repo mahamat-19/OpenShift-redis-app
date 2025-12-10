@@ -27,14 +27,18 @@ app.post("/check", async (req, res) => {
   const username = req.body.username || "";
   const password = req.body.password || "";
 
+  console.log("Checking credentials:", { username, password });
+
   // Retrieve saved credentials from Redis (hash)
   // Here we use a fixed key; in a real app you’d use dynamic user keys.
   const stored = await redis.hGetAll("credentials:admin");
+  console.log("Stored credentials:", stored);
 
   const isValid =
     stored &&
     stored.username === username &&
     stored.password === password;
+    console.log("isValid:", isValid);
 
   if (isValid) {
     return res.sendFile(__dirname + "/public/secret.html");

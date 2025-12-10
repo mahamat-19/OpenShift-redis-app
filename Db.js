@@ -9,7 +9,7 @@ redisClient.on("error", (err) => console.error("Redis error:", err));
 await redisClient.connect();
 
 // Example: seed credentials (only for demo, not production)
-await redisClient.hSet("credentials", {
+await redisClient.hSet("credentials:admin", {
   username: "admin",
   password: "distributedsystems",
 });
@@ -17,3 +17,4 @@ await redisClient.hSet("credentials", {
 console.log("Seeded credentials: admin / distributedsystems");
 
 await redisClient.quit();
+
